@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 11)
 find_package(Threads)
 
 include_directories(include)
-include_directories(include/sm)
+
 
 add_definitions(-DSK_OS_LINUX)
 

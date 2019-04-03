@@ -8,4 +8,4 @@ find_package(Threads)
 
 aux_source_directory(. DIR_LIBS_SRC)
 add_library(sk_sm ${DIR_LIBS_SRC})
-target_link_libraries(sk_sm sk_os)
+#target_link_libraries(sk_sm sk_os)

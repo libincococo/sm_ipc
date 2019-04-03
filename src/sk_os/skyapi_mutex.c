@@ -54,7 +54,7 @@ sk_status_code_t sk_mutex_create_ex(sk_mutex_id_t *const p_mutex_id)
 	memset(t, 0x00, sizeof(pthread_mutex_t));
 
 	pthread_mutexattr_init(&ma);
-	pthread_mutexattr_settype(&ma, PTHREAD_MUTEX_RECURSIVE_NP);
+	pthread_mutexattr_settype(&ma, PTHREAD_MUTEX_DEFAULT);
 	
 	if(0 == pthread_mutex_init(t, &ma))
 	{		

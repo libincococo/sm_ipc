@@ -20,14 +20,19 @@
  * ===================================
  *
 */
-#include "smstruct.h"
-#include "smmacro.h"
-#include "smglobal.h"
+
 #include "smmsg.h"
-#include "sk_os.h"
+
+
+extern void wait_event(void);
+extern void signal_event(void);
+extern void lock_system(void);
+extern void unlock_system(void);
 
 static MSGQ		message_queue;
 static s32		queue_size;
+
+
 
 void init_msgq(s32 nqueue)
 {
@@ -36,6 +41,14 @@ void init_msgq(s32 nqueue)
 	message_queue.head = message_queue.tail = 0;
 	message_queue.queue = (MESSAGE*)sk_mem_malloc(queue_size * sizeof(MESSAGE));
 	sk_sem_create(&(message_queue.access), "msgq",1);
+}
+
+void send_message(HSM hsm, u32 message, u32 param1, u32 param2)
+{
+	lock_system();
+	push_message(hsm, message, param1, param2);
+	unlock_system();
+	sk_task_delay(1);
 }
 
 s32 push_message(HSM hsm, u32 message, u32 param1, u32 param2)

@@ -4,7 +4,7 @@
 #include <sys/syscall.h>
 #include "priv_mac.h"
 #include "sk_tbx.h"
-#include <sys/prctl.h>
+//#include <sys/prctl.h>
 
 /**************************************
 *
@@ -63,8 +63,8 @@ void sk_task_thread_sigaction(void)
 }
 
 /**********************************************************************************
-*linux ÏµÍ³µÄÏß³ÌÈç¹û²ÉÓÃOTHERÄ£Ê½£¬Ã»ÓÐÓÅÏÈ¼¶¿ÉÒÔµ÷Õû
-*Òò´Ë¼ÓÈëÁËÕâ¸öº¯ÊýÍ¨¹ýtaskµÄÓÅÏÈ¼¶À´ÐÞ¸ÄniceµÄÖµ.
+*linux ÏµÍ³ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½OTHERÄ£Ê½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½È¼ï¿½ï¿½ï¿½ï¿½Ôµï¿½ï¿½ï¿½
+*ï¿½ï¿½Ë¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½taskï¿½ï¿½ï¿½ï¿½ï¿½È¼ï¿½ï¿½ï¿½ï¿½Þ¸ï¿½niceï¿½ï¿½Öµ.
 **********************************************************************************/
 static void *wrap_task_fun(void* param)
 {
@@ -93,7 +93,7 @@ static void *wrap_task_fun(void* param)
 				pro =0;
 				if(os_thread_info[i].task_pro != SK_TASK_DEFAULT_PRIORITY)
 				{
-					/* linux µÄnice Öµ´Ó-20 µ½20 ¸ºÖµ±íÊ¾Õ¼ÓÃµÄcpuµÄÊ±¼äÆ¬Ô½³¤. */
+					/* linux ï¿½ï¿½nice Öµï¿½ï¿½-20 ï¿½ï¿½20 ï¿½ï¿½Öµï¿½ï¿½Ê¾Õ¼ï¿½Ãµï¿½cpuï¿½ï¿½Ê±ï¿½ï¿½Æ¬Ô½ï¿½ï¿½. */
 					pro = ((S32)(40*(os_thread_info[i].task_pro-SK_TASK_DEFAULT_PRIORITY))/(SK_TASK_PRIORITY_HIGHEST - SK_TASK_PRIORITY_LOWEST))*(-1);	
 
 					ret = setpriority(PRIO_PROCESS, idThread, pro);
@@ -117,7 +117,7 @@ static void *wrap_task_fun(void* param)
 				pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldtype);
 				#endif
 				
-				prctl(PR_SET_NAME, os_thread_info[i].str_name, 0, 0, 0);
+				//prctl(PR_SET_NAME, os_thread_info[i].str_name, 0, 0, 0);
 				
 				if(os_thread_info[i].task_fun != NULL)
 				{				
@@ -203,7 +203,7 @@ sk_status_code_t sk_task_create(sk_task_id_t * const p_task_id,
 #endif
 
 #if 0
-	/* ÉèÖÃÏß³ÌÎª·ÖÀëÄ£Ê½*/
+	/* ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½Îªï¿½ï¿½ï¿½ï¿½Ä£Ê½*/
 	ret = pthread_attr_setdetachstate ( &thread_attr, PTHREAD_CREATE_DETACHED);
 	if(ret != 0)
 	{
@@ -442,7 +442,7 @@ sk_status_code_t sk_task_wait_timeout(const sk_task_id_t  task_id, const U32 ms)
         	return SK_FAILED;
 	}
 #else
-	if ( 0 !=pthread_kill(pth_t, SIGUSR1))  //SIGUSR1Ä¬ÈÏÊÇÖÕÖ¹Ïß³Ì
+	if ( 0 !=pthread_kill(pth_t, SIGUSR1))  //SIGUSR1Ä¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ß³ï¿½
 	{
 		SK_ERROR(("kill task id 0x%lx failed. ", task_id));
         	return SK_FAILED;
@@ -706,7 +706,7 @@ void sk_task_dump(void)
 	}
 }
 
-#if 0  //Ôö¼ÓÁËkillµÄÊµÏÖ£¬µÈ´ýÆäËûÄ£¿éÉÏ´«ºó£¬²ÅÄÜÊ¹ÓÃÕâ²¿·Ö´úÂëÌæ»»ÉÏÃæµÄÊµÏÖ
+#if 0  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½killï¿½ï¿½Êµï¿½Ö£ï¿½ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ó£¬²ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ï¿½â²¿ï¿½Ö´ï¿½ï¿½ï¿½ï¿½æ»»ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½
 sk_status_code_t sk_task_kill(const sk_task_id_t  task_id)
 {
 	sky_os_thread_info_t* task_info = NULL;
@@ -794,7 +794,7 @@ sk_status_code_t sk_task_destroy(const sk_task_id_t  task_id)
 }
 #endif
 
-/*¼ì²éÈÎÎñÃû³Æ£¬µ±·¢ÏÖÖØÃûtaskÔò·µ»ØÊ§°Ü*/
+/*ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½taskï¿½ò·µ»ï¿½Ê§ï¿½ï¿½*/
 static sk_status_code_t sk_check_task_name(const char *ptaskname)
 {
 	int i;

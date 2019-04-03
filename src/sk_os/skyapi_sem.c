@@ -117,8 +117,8 @@ sk_status_code_t  sk_sem_lock_timeout(const sk_sem_id_t sem_id, const U32 timeou
 		uSleepMilliseconds = uSleepMilliseconds % 1000;
 		absTimeout.tv_nsec = uSleepMilliseconds * 1000 * 1000;
 
-		ret = sem_timedwait (Semaphore,
-		                      &absTimeout );
+		//ret = sem_timedwait(Semaphore,&absTimeout );
+		ret = sem_wait(Semaphore );
 	}
 	if(ret == 0)
 		return SK_SUCCESS;

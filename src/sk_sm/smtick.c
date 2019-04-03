@@ -21,14 +21,14 @@
  *
 */
 
-#include <stdio.h>
-#include "smallwin.h"
-#include "smglobal.h"
 
-#include "os.h"
+#include "smmsg.h"
+#include "sk_tbx.h"
+
+#define SMALLWIN_NTICKS				32
 
 typedef struct tag_tick_message {
-	HSM		hsm;
+	HSM			hsm;
 	u32			n100msec;
 	u32			count;
 	u32			param2;
@@ -36,25 +36,19 @@ typedef struct tag_tick_message {
 } TICK_MSG;
 
 static TICK_MSG		tick_list[SMALLWIN_NTICKS];
-static semaphore_t	sem_tick;
+static sk_sem_id_t	sem_tick_id;
+static sk_task_id_t	SmallwinTickTask = 0;
 
-//extern void watchdog_reset_timer(void);
 
 static void sm_ticker(void *param)
 {
 	s32	i;
 
 	while(1) {
-		//print("proc the ticker...................\n");
-		task_delay(SEC_100M);
 
-#if 0
-		j ^= 1;
-		if(j)
-			send_key_message(SMKY_INVALID, 0);
-#endif
-		//watchdog_reset_timer();
-		semaphore_wait(&sem_tick);
+		sk_task_delay(100);
+
+		sk_sem_lock(sem_tick_id);
 		for(i = 0; i < SMALLWIN_NTICKS; i++)
 		{
 			if(tick_list[i].hsm)
@@ -63,49 +57,36 @@ static void sm_ticker(void *param)
 				{
 					if(is_message_param(tick_list[i].hsm, SMM_TICK, i + 1, tick_list[i].count) == 0)
 					{
-						if(!sm_is_smallwin(smp_common(tick_list[i].hsm)))
-						{
-//							print("...sm_tick()...hsm=0x%08x, htick=%d\n",tick_list[i].hsm, i + 1);
-							tick_list[i].hsm = 0;
-						}
+
+						if(tick_list[i].param2)
+							send_message(tick_list[i].hsm, SMM_TICK, i + 1, tick_list[i].param2);
 						else
-						{
-							if(tick_list[i].sysflag)
-							{
-								if(tick_list[i].param2)
-									send_message(tick_list[i].hsm, SMM_SYSTICK, i + 1, tick_list[i].param2);
-								else
-									send_message(tick_list[i].hsm, SMM_SYSTICK, i + 1, tick_list[i].count);
-							}
-							else
-							{
-								if(tick_list[i].param2)
-									send_message(tick_list[i].hsm, SMM_TICK, i + 1, tick_list[i].param2);
-								else
-									send_message(tick_list[i].hsm, SMM_TICK, i + 1, tick_list[i].count);
-							}
-						}
+							send_message(tick_list[i].hsm, SMM_TICK, i + 1, tick_list[i].count);
+
 					}
 					tick_list[i].count = 0;
 				}
 				tick_list[i].count++;
 			}
 		}
-		semaphore_signal(&sem_tick);
+		sk_sem_lock(sem_tick_id);
 	}
 }
 
-task_id_t SmallwinTickTask = 0;
+
 
 void sm_tick_init(void)
 {
-	Memset(tick_list, 0, sizeof(tick_list));
-	semaphore_init_fifo(&sem_tick, 1);
 
-	SmallwinTickTask = task_create(sm_ticker, NULL, NULL, 0x0800, TASK_PRIORITY_LOWEST, "SWTicker");
-	if (SmallwinTickTask == 0)
+	sk_status_code_t recode = SK_SUCCESS;
+	memset(tick_list, 0, sizeof(tick_list));
+	sk_sem_create(&sem_tick_id,"sm_tick", 1);
+
+
+	recode = sk_task_create(&SmallwinTickTask,"sm_tick",sm_ticker,NULL,NULL,SK_TASK_DEFAULT_STACK_SIZE,SK_TASK_PRIORITY_LOWEST);
+	if (recode != SK_SUCCESS)
 	{
-		printf("...Smallwindows Ticket Process Create Error....\n");
+		//SK_ERROR("...Smallwindows Ticket Process Create Error....\n");
 	}
 }
 
@@ -114,7 +95,7 @@ s32 sm_set_xtick(HSM hsm, u32 n100msec, u32 param2, s32 sysflag)
 	s32		i;
 
 	//assert(hsm);
-	semaphore_wait(&sem_tick);
+	sk_sem_lock(sem_tick_id);
 	for(i = 0; i < SMALLWIN_NTICKS; i++) {
 		if(tick_list[i].hsm == 0) {
 			tick_list[i].hsm = hsm;
@@ -125,38 +106,29 @@ s32 sm_set_xtick(HSM hsm, u32 n100msec, u32 param2, s32 sysflag)
 			break;
 		}
 	}
-	semaphore_signal(&sem_tick);
+	sk_sem_unlock(sem_tick_id);
 
 	if(i != SMALLWIN_NTICKS) {
 		return (i + 1);
 	}
-	else
-		//assert(0);
 
 	return 0;
 }
 
-s32 sm_create_tick(HSM hsm, u32 n100msec)
-{
-	//assert(hsm);
+s32 sm_create_tick(HSM hsm, u32 n100msec){
+
 	return sm_set_xtick(hsm, n100msec, 0, 0);
 }
 
 s32 sm_create_systick(HSM hsm, u32 n100msec)
 {
-	//assert(hsm);
 	return sm_set_xtick(hsm, n100msec, 0, 1);
 }
 
 void sm_destroy_tick(s32 htick)
 {
-	//assert(htick != -1);
-	semaphore_wait(&sem_tick);
+	sk_sem_lock(sem_tick_id);
 	if((htick > 0) && (htick <= SMALLWIN_NTICKS))
 		tick_list[htick - 1].hsm = 0;
-	else{
-		char aksjdflja_buff[100];
-		Sprintf(aksjdflja_buff,"htick=%d\n",htick);
-	}
-	semaphore_signal(&sem_tick);
+	sk_sem_lock(sem_tick_id);
 }

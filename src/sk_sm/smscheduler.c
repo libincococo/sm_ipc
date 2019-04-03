@@ -21,19 +21,44 @@
  *
 */
 
-#include "smallwin.h"
-#include "smglobal.h"
-#include "smgrp.h"
+#include "smmsg.h"
+#include <stdio.h>
+
+#define SMALLWIN_NMSGQ				1000
 
 static COMMON_SM	*smallwin_list = NULL;
-
+static sk_sem_id_t	sem_system;
+static sk_sem_id_t	sem_event;
 
 static void smallwin_scheduler(void *param);
 
-//extern void sm_usif_start(U8 type);
-extern void sm_tick_init(void);
+static void init_global(void)
+{
+	sk_sem_create(&sem_system,"system", 1);
+	sk_sem_create(&sem_event, "event",0);
+}
 
-void sm_add_smallwin_list(COMMON_SM *node)
+void wait_event(void)
+{
+	sk_sem_lock(sem_event);
+}
+
+void signal_event(void)
+{
+	sk_sem_unlock(sem_event);
+}
+
+void lock_system(void)
+{
+	sk_sem_lock(sem_system);
+}
+
+void unlock_system(void)
+{
+	sk_sem_unlock(sem_system);
+}
+
+static void sm_add_smallwin_list(COMMON_SM *node)
 {
 	COMMON_SM	*temp = smallwin_list;
 
@@ -71,10 +96,7 @@ HSM sm_create_smallwin(
 {
 	COMMON_SM		*sm = NULL;
 
-	/*********************************************************************
-	 *	ͨ��sizeof��struct������������� Ӧ���ʹ��ڻ�ؼ���������ڴ�ռ䡣
-	 *	�����ڴ���亯��malloc()Ϊ������ڴ�ռ�
-	 *********************************************************************/
+
 	lock_system();
 	sm = (COMMON_SM*)sk_mem_malloc(sizeof(COMMON_SM));
 	if(sm) {
@@ -88,114 +110,51 @@ HSM sm_create_smallwin(
 			sm->sm_text[MAX_SM_TEXT_LEN - 1] = 0;
 		}
 		sm_add_smallwin_list(sm);
-		push_message((HSM)sm, SMM_CREATE, param1, param2);
+		push_message((HSM)sm, SMM_CREATE, 0, 0);
 	}
 	unlock_system();
 	return (HSM)sm;
 }
 
-static void sm_destroy_main_smallwin(HSM hsm, s32 message_flag)
+void sm_destroy_smallwin(HSM hsm, s32 message_flag)
 {
 	if(!hsm)
 		return;
-	if(smp_common(hsm)->prev)
+
+	lock_system();
+    if(smp_common(hsm)->prev)
+        smp_common(hsm)->prev->next = smp_common(hsm)->next;
+    else
+        smallwin_list = smp_common(hsm)->next;
+    if(smp_common(hsm)->next)
+        smp_common(hsm)->next->prev = smp_common(hsm)->prev;
 
 	erase_message(hsm); 
 	sk_mem_free(smp_common(hsm));
-}
-
-static void sm_destroy_child_smallwin(HSM hsm)
-{
-	COMMON_SM *sm = smp_common(hsm);
-
-	if(sm->prev)
-		sm->prev->next = sm->next;
-
-	if(sm->next)
-		sm->next->prev = sm->prev;
-
-	sk_mem_free(smp_common(hsm));
-}
-
-static HSM sm_destroy_smallwin(HSM hsm, s32 message_flag)
-{
-	COMMON_SM *next;
-
-	lock_system();
-	next = smp_common(hsm)->next;
-	if(smp_common(hsm)->sm_type & SMT_CHILD_BIT)
-		sm_destroy_child_smallwin(hsm);
-	else
-		sm_destroy_main_smallwin(hsm, message_flag);
 	unlock_system();
-	return ((HSM)next);
 }
+
 
 
 static void smallwin_scheduler(void *param)
 {
+    HSM		hsm;
+    u32		message,
+            param1,
+            param2;
+
+
 	while(1)
 	{
-		sm_process_message(0);
+        if(pop_message(&hsm, &message, &param1, &param2)) {
+            if (hsm) {
+                run_sm(hsm, message, param1, param2);
+            }
+        }
 		sk_task_delay(1);
 	}
 }
 
-void sm_process_message(HSM hsuspend_smallwin)
-{
-	HSM		hsm;
-	u32		message,
-			param1,
-			param2;
-
-
-	if(pop_message(&hsm, &message, &param1, &param2)) {
-		if(hsm) {
-			if(hsuspend_smallwin != hsm) {
-				if(sm_is_smallwin(smp_common(hsm))) {
-					switch(message) {
-						case SMM_SYSPAINT:
-						case SMM_PAINT:
-							if(!smmq_paint(hsm))
-								break;
-						case SMM_KEY:
-							if(smmq_nokey(hsm) && (message == SMM_KEY))
-							{
-								break;
-							}
-						default:
-							//assert(fvalid_pointer((void *)hsm,sizeof(HSM)));
-							if(hsm)
-								if(run_sm(hsm, message, param1, param2) == 0) {
-									if(smp_common(hsm)->sm_type == SMT_POPUP) {
-										sm_destroy_popup((POPUP*)(popup_list));
-										popup_list = NULL;
-									}
-									else if(smp_common(hsm)->sm_type == SMT_DIALOG) {
-										sm_destroy_smallwin(hsm, 0);
-									}
-									else
-										sm_destroy_smallwin(hsm, 1);
-									erase_message(hsm);
-								}
-					}
-				}
-			}
-			else switch(message) {
-				case SMM_TICK:
-					break;
-				default:
-					sm_express_message(hsm, message, param1, param2);
-			}
-		}
-	}
-}
-
-
-void sm_express_message(HSM hsm, u32 message, u32 param1, u32 param2)
-{
-
-}
 
 HSM sm_get_smallwin_list(void)
 {
@@ -208,7 +167,6 @@ void run_smallwin(void)
 {
 	sk_status_code_t recod = SK_FAILED;
 	init_msgq(SMALLWIN_NMSGQ);
-	init_message_control_process();
 	init_global();
 	sm_tick_init();
 
