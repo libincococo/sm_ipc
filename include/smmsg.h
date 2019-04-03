@@ -76,7 +76,7 @@ typedef struct tag_common_smallwin {
 
 #define smp_common(hsm)			((COMMON_SM*)(hsm))
 
-
+void    run_smallwin(void);
 
 void 	init_msgq(s32 nqueue);
 void 	send_message(HSM hsm, u32 message, u32 param1, u32 param2);

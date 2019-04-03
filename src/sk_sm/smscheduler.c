@@ -173,7 +173,7 @@ void run_smallwin(void)
 	recod = sk_task_create(&SmallwinSchedulerTask,"sm",smallwin_scheduler, NULL,NULL,SK_TASK_DEFAULT_STACK_SIZE,SK_TASK_DEFAULT_PRIORITY);
 	if(SmallwinSchedulerTask==0)
 	{
-		SK_ERROR("SMALLWIN smallwin_scheduler START FAIL.............\n\r");
+		SK_ERROR(("SMALLWIN smallwin_scheduler START FAIL.............\n\r"));
 	}
-	SK_DEBUG("SMALLWIN smallwin_scheduler PROCESS STARTED ...........\n");
+	SK_DEBUG(("SMALLWIN smallwin_scheduler PROCESS STARTED ...........\n"));
 }

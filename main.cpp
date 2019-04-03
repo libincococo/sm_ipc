@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "sk_os.h"
+#include "smmsg.h"
 
 int main() {
 
@@ -9,6 +10,7 @@ int main() {
     sk_sem_lock(semid);
     sk_sem_lock(semid);
     sk_mem_malloc(32);
+    run_smallwin();
     printf("this is test....");
     return 0;
 }

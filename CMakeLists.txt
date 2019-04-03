@@ -14,4 +14,4 @@ add_subdirectory(src/sk_os )
 add_subdirectory(src/sk_sm)
 
 add_executable(sm_ipc main.cpp)
-target_link_libraries(sm_ipc sk_os)
+target_link_libraries(sm_ipc sk_sm sk_os)

@@ -86,7 +86,7 @@ void sm_tick_init(void)
 	recode = sk_task_create(&SmallwinTickTask,"sm_tick",sm_ticker,NULL,NULL,SK_TASK_DEFAULT_STACK_SIZE,SK_TASK_PRIORITY_LOWEST);
 	if (recode != SK_SUCCESS)
 	{
-		//SK_ERROR("...Smallwindows Ticket Process Create Error....\n");
+		SK_ERROR(("...Smallwindows Ticket Process Create Error....\n"));
 	}
 }
 
