@@ -38,22 +38,22 @@ typedef struct tag_tick_message {
 static TICK_MSG		tick_list[SMALLWIN_NTICKS];
 static sk_sem_id_t	sem_tick_id;
 static sk_task_id_t	SmallwinTickTask = 0;
+static u32 			time_tick = 100;
 
-
-static void sm_ticker(void *param)
+static void* sm_ticker(void *param)
 {
 	s32	i;
 
 	while(1) {
 
-		sk_task_delay(100);
+		sk_task_delay(time_tick);
 
 		sk_sem_lock(sem_tick_id);
 		for(i = 0; i < SMALLWIN_NTICKS; i++)
 		{
 			if(tick_list[i].hsm)
 			{
-				if(tick_list[i].count == tick_list[i].n100msec)
+				if(tick_list[i].count*time_tick >= tick_list[i].n100msec)
 				{
 					if(is_message_param(tick_list[i].hsm, SMM_TICK, i + 1, tick_list[i].count) == 0)
 					{
@@ -69,7 +69,7 @@ static void sm_ticker(void *param)
 				tick_list[i].count++;
 			}
 		}
-		sk_sem_lock(sem_tick_id);
+		sk_sem_unlock(sem_tick_id);
 	}
 }
 
@@ -115,9 +115,9 @@ s32 sm_set_xtick(HSM hsm, u32 n100msec, u32 param2, s32 sysflag)
 	return 0;
 }
 
-s32 sm_create_tick(HSM hsm, u32 n100msec){
+s32 sm_create_tick(HSM hsm, u32 ms){
 
-	return sm_set_xtick(hsm, n100msec, 0, 0);
+	return sm_set_xtick(hsm, ms, 0, 0);
 }
 
 s32 sm_create_systick(HSM hsm, u32 n100msec)

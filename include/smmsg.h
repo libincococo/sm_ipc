@@ -26,6 +26,11 @@
 
 #include "sk_os.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MAX_MESSAGE_QUEUE		20
 #define MAX_SM_TEXT_LEN 		32
 
@@ -75,24 +80,25 @@ typedef struct tag_common_smallwin {
 } COMMON_SM;
 
 #define smp_common(hsm)			((COMMON_SM*)(hsm))
+#define SK_INVALID_HSM          (0)
 
+HSM     sm_create_smallwin(u16 sm_type,u16 sm_id,char *sm_text,SM_PROC sm_proc);
+s32 	sm_is_smallwin(void *asmallwin);
 void    run_smallwin(void);
 
-void 	init_msgq(s32 nqueue);
+s32     pop_message(HSM *hsm, u32 *message, u32 *param1, u32 *param2);
 void 	send_message(HSM hsm, u32 message, u32 param1, u32 param2);
-s32 	push_message(HSM hsm, u32 message, u32 param1, u32 param2);
-s32 	pop_message(HSM *hsm, u32 *message, u32 *param1, u32 *param2);
-s32 	is_message(HSM hsm);
-s32 	is_message_param(HSM hsm, u32 message, u32 param1, u32 param2);
-s32 	get_nmessage(void);
-
-void 	invalidate_message(s32 message);
+void 	express_message(HSM hsm, u32 message, u32 param1, u32 param2);
 void 	erase_message(HSM hsm);
+void    erase_message_type(HSM hsm, u32 message);
 
 void 	sm_tick_init(void);
-s32 	sm_create_tick(HSM hsm, u32 n100msec);
+s32 	sm_create_tick(HSM hsm, u32 ms);
 void 	sm_destroy_tick(s32 htick);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

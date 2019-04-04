@@ -22,6 +22,7 @@
 */
 
 #include "smmsg.h"
+#include "sk_tbx.h"
 
 
 extern void wait_event(void);
@@ -31,8 +32,6 @@ extern void unlock_system(void);
 
 static MSGQ		message_queue;
 static s32		queue_size;
-
-
 
 void init_msgq(s32 nqueue)
 {
@@ -56,7 +55,7 @@ s32 push_message(HSM hsm, u32 message, u32 param1, u32 param2)
 	s32		return_value = 1,
 			def;
 
-	if(hsm == 0) {
+	if(hsm == SK_INVALID_HSM) {
 		return 0;
 	}
 	sk_sem_lock(message_queue.access);
@@ -75,8 +74,8 @@ s32 push_message(HSM hsm, u32 message, u32 param1, u32 param2)
 	else
 	{
 		return_value = 0;
-		SK_DEBUG("......Message push ..... Error \n");
-		SK_DEBUG("......message...h=%d, t=%d, qsize=%d ",message_queue.head, message_queue.tail, queue_size);
+		SK_DEBUG(("......Message push ..... Error \n"));
+		SK_DEBUG(("......message...h=%d, t=%d, qsize=%d ",message_queue.head, message_queue.tail, queue_size));
 	}
 	sk_sem_unlock(message_queue.access);
 	return return_value;
@@ -86,13 +85,11 @@ s32 pop_message(HSM *hsm, u32 *message, u32 *param1, u32 *param2)
 {
 	s32	return_value;
 
-	SMMSG_ASSERT(hsm);
-	SMMSG_ASSERT(message);
-	SMMSG_ASSERT(param1);
-	SMMSG_ASSERT(param2);
-	if(hsm == 0) {
-		return 0;
-	}
+	SK_ASSERT(hsm);
+	SK_ASSERT(message);
+	SK_ASSERT(param1);
+	SK_ASSERT(param2);
+
 	wait_event();
 	sk_sem_lock(message_queue.access);
 
@@ -120,6 +117,9 @@ s32 is_message(HSM hsm)
 	s32		return_value = 0,
 			i;
 
+	if(hsm == SK_INVALID_HSM){
+		return return_value;
+	}
 	sk_sem_lock(message_queue.access);
 
 	i = message_queue.head;
@@ -142,7 +142,6 @@ s32 is_message_param(HSM hsm, u32 message, u32 param1, u32 param2)
 			i;
 
 	sk_sem_lock(message_queue.access);
-
 	i = message_queue.head;
 
 	while(i != message_queue.tail) {
@@ -193,7 +192,7 @@ void erase_message(HSM hsm)
 {
 	s32		i;
 
-	//////////assert_3(hsm);
+	SK_ASSERT(hsm);
 	sk_sem_lock(message_queue.access);
 	for(i = 0; i < queue_size; i++) {
 		if(message_queue.queue[i].hsm == hsm) {
@@ -210,7 +209,7 @@ void erase_message_type(HSM hsm, u32 message)
 {
 	s32		i;
 
-	//////////assert_3(hsm);
+    SK_ASSERT(hsm);
 	sk_sem_lock(message_queue.access);
 	for(i = 0; i < queue_size; i++) {
 		if((message_queue.queue[i].hsm == hsm)&&(message_queue.queue[i].message == message)) {

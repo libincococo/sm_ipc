@@ -11,7 +11,12 @@ include_directories(include)
 add_definitions(-DSK_OS_LINUX)
 
 add_subdirectory(src/sk_os )
-add_subdirectory(src/sk_sm)
+add_subdirectory(src/sk_sm )
 
-add_executable(sm_ipc main.cpp)
-target_link_libraries(sm_ipc sk_sm sk_os)
+
+set(SM_SRC main.cpp)
+
+add_executable(sm_ipc ${SM_SRC})
+
+target_link_libraries(sm_ipc sk_os sk_sm pthread)
+
